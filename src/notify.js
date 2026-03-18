@@ -4,7 +4,7 @@ import { loadConfig, CURSOR_EVENT_MAP, pickPhrase } from "./config.js";
 
 export function sendNotification(title, message) {
   if (process.platform === "darwin") {
-    const script = `display notification "${message.replace(/"/g, '\\"')}" with title "${title.replace(/"/g, '\\"')}" sound name "default"`;
+    const script = `display notification "${message.replace(/"/g, '\\"')}" with title "${title.replace(/"/g, '\\"')}" sound name "Pop"`;
     execFile("osascript", ["-e", script], () => {});
   } else if (process.platform === "win32") {
     const ps = `
