@@ -18,34 +18,11 @@ export const CURSOR_EVENT_MAP = {
 };
 
 export const PHRASES = {
-  "session.start": [
-    "Session started",
-    "Agent session is active",
-    "New session opened",
-  ],
-  "session.end": [
-    "Session ended",
-    "Agent session closed",
-    "Session terminated",
-  ],
-  "task.complete": [
-    "Agent is ready for input",
-    "Task complete — awaiting instructions",
-    "Agent finished — your turn",
-    "Done — waiting for you",
-    "Ready for next prompt",
-  ],
-  "task.error": [
-    "A tool execution failed",
-    "Error encountered",
-    "Something went wrong",
-    "Tool use failed",
-  ],
-  "resource.limit": [
-    "Context is getting large",
-    "Approaching context limit",
-    "Memory running low",
-  ],
+  "session.start": "Session started",
+  "session.end": "Session ended",
+  "task.complete": "Agent is ready for input",
+  "task.error": "A tool execution failed",
+  "resource.limit": "Context is getting large",
 };
 
 export function loadConfig() {
@@ -75,7 +52,5 @@ export function ensureConfig() {
 }
 
 export function pickPhrase(category) {
-  const phrases = PHRASES[category];
-  if (!phrases || phrases.length === 0) return "Notification";
-  return phrases[Math.floor(Math.random() * phrases.length)];
+  return PHRASES[category] || "Notification";
 }
