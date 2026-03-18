@@ -1,6 +1,19 @@
-import { execFile } from "child_process";
+import { execFile, execFileSync } from "child_process";
 import { basename } from "path";
 import { loadConfig, CURSOR_EVENT_MAP, pickPhrase } from "./config.js";
+
+function getBranch(cwd) {
+  try {
+    return execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+      cwd,
+      encoding: "utf-8",
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
 
 export function sendNotification(title, message) {
   if (process.platform === "darwin") {
@@ -36,10 +49,11 @@ export function processEvent(payload) {
 
   const workspaceRoots = payload.workspace_roots;
   const cwd = Array.isArray(workspaceRoots) && workspaceRoots[0] ? workspaceRoots[0] : "";
-  const projectName = cwd ? basename(cwd) : "";
+  const branch = cwd ? getBranch(cwd) : null;
+  const label = branch || (cwd ? basename(cwd) : "");
 
   const phrase = pickPhrase(category);
-  const title = projectName ? `Cursor — ${projectName}` : "Cursor";
+  const title = label ? `Cursor — ${label}` : "Cursor";
 
   sendNotification(title, phrase);
 }
