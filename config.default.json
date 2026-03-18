@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "categories": {
+    "session.start": true,
+    "session.end": true,
+    "task.complete": true,
+    "task.error": true,
+    "resource.limit": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "cursor-notify",
+  "version": "0.1.0",
+  "description": "Native OS notifications for Cursor agent events",
+  "type": "module",
+  "bin": {
+    "cursor-notify": "src/cli.js"
+  },
+  "files": [
+    "src/",
+    "config.default.json",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node src/cli.js test"
+  },
+  "license": "MIT"
+}
