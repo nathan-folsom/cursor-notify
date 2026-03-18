@@ -82,3 +82,7 @@ Notifications use platform-native tools with zero npm dependencies:
 - **macOS**: `osascript` (AppleScript `display notification`)
 - **Linux**: `notify-send`
 - **Windows**: PowerShell toast notifications
+
+## Acknowledgements
+
+Inspired by [voxlert](https://github.com/settinghead/voxlert), which provides LLM-generated voice notifications for coding agents using game character voices. cursor-notify takes a simpler approach — just native OS notifications, no audio or TTS required.
