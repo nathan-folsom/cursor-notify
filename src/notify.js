@@ -15,15 +15,23 @@ function getBranch(cwd) {
   }
 }
 
-export function sendNotification(title, message) {
+function escapeAppleScript(str) {
+  return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+export function sendNotification(title, message, subtitle) {
   if (process.platform === "darwin") {
-    const script = `display notification "${message.replace(/"/g, '\\"')}" with title "${title.replace(/"/g, '\\"')}" sound name "Pop"`;
-    execFile("osascript", ["-e", script], () => {});
+    const parts = [`display notification "${escapeAppleScript(message)}"`, `with title "${escapeAppleScript(title)}"`];
+    if (subtitle) {
+      parts.push(`subtitle "${escapeAppleScript(subtitle)}"`);
+    }
+    parts.push(`sound name "Pop"`);
+    execFile("osascript", ["-e", parts.join(" ")], () => {});
   } else if (process.platform === "win32") {
     const ps = `
       [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
       $template = @"
-      <toast><visual><binding template='ToastGeneric'><text>${title}</text><text>${message}</text></binding></visual></toast>
+      <toast><visual><binding template='ToastGeneric'><text>${title}</text>${subtitle ? `<text>${subtitle}</text>` : ""}<text>${message}</text></binding></visual></toast>
 "@
       $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
       $xml.LoadXml($template)
@@ -32,7 +40,8 @@ export function sendNotification(title, message) {
     `.trim();
     execFile("powershell", ["-Command", ps], () => {});
   } else {
-    execFile("notify-send", [title, message], () => {});
+    const body = subtitle ? `${subtitle}\n${message}` : message;
+    execFile("notify-send", [title, body], () => {});
   }
 }
 
@@ -50,10 +59,11 @@ export function processEvent(payload) {
   const workspaceRoots = payload.workspace_roots;
   const cwd = Array.isArray(workspaceRoots) && workspaceRoots[0] ? workspaceRoots[0] : "";
   const branch = cwd ? getBranch(cwd) : null;
-  const label = branch || (cwd ? basename(cwd) : "");
+  const cwdName = cwd ? basename(cwd) : "";
+  const title = cwdName || branch || "Cursor";
+  const subtitle = branch && branch !== title ? branch : undefined;
 
   const phrase = pickPhrase(category);
-  const title = label ? `Cursor — ${label}` : "Cursor";
 
-  sendNotification(title, phrase);
+  sendNotification(title, phrase, subtitle);
 }

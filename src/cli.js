@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { basename } from "path";
 import { ensureConfig } from "./config.js";
 import { registerCursorHooks, unregisterCursorHooks, hasCursorHooks } from "./cursor-hooks.js";
 import { sendNotification } from "./notify.js";
@@ -50,7 +51,7 @@ async function main() {
 
     case "test": {
       ensureConfig();
-      sendNotification("Cursor — test", "Notifications are working!");
+      sendNotification("Cursor", "Notifications are working!", basename(process.cwd()));
       console.log("Test notification sent.");
       break;
     }
