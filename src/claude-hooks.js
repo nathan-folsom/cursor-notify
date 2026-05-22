@@ -2,54 +2,62 @@ import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
-const CURSOR_DIR = join(homedir(), ".cursor");
-const HOOKS_FILE = join(CURSOR_DIR, "hooks.json");
+const CLAUDE_DIR = join(homedir(), ".claude");
+const SETTINGS_FILE = join(CLAUDE_DIR, "settings.json");
 
-const CURSOR_HOOK_EVENTS = ["stop"];
+const HOOK_MARKER = "cursor-notify";
+
+const CLAUDE_HOOK_EVENTS = ["Stop", "Notification"];
 
 function isOurHook(entry) {
-  const cmd = (entry && entry.command) || "";
-  return typeof cmd === "string" && cmd.includes("cursor-notify");
+  const hooks = entry && entry.hooks;
+  if (!Array.isArray(hooks)) return false;
+  return hooks.some(
+    (h) =>
+      h && typeof h.command === "string" && h.command.includes(HOOK_MARKER),
+  );
 }
 
-function loadHooks() {
+function loadSettings() {
   try {
-    return JSON.parse(readFileSync(HOOKS_FILE, "utf-8"));
+    return JSON.parse(readFileSync(SETTINGS_FILE, "utf-8"));
   } catch {
-    return { version: 1, hooks: {} };
+    return {};
   }
 }
 
-export function hasCursorHooks() {
-  const config = loadHooks();
+export function hasClaudeHooks() {
+  const config = loadSettings();
   if (!config.hooks || typeof config.hooks !== "object") return false;
   return Object.values(config.hooks).some(
     (entries) => Array.isArray(entries) && entries.some(isOurHook),
   );
 }
 
-export function registerCursorHooks(command) {
-  mkdirSync(CURSOR_DIR, { recursive: true });
-  const config = loadHooks();
-  if (config.version === undefined) config.version = 1;
+export function registerClaudeHooks(command) {
+  mkdirSync(CLAUDE_DIR, { recursive: true });
+  const config = loadSettings();
   if (!config.hooks || typeof config.hooks !== "object") config.hooks = {};
 
   let count = 0;
-  for (const event of CURSOR_HOOK_EVENTS) {
+  for (const event of CLAUDE_HOOK_EVENTS) {
     const existing = config.hooks[event];
     const arr = Array.isArray(existing) ? existing : [];
     const withoutUs = arr.filter((entry) => !isOurHook(entry));
-    config.hooks[event] = [...withoutUs, { command, timeout: 10 }];
+    config.hooks[event] = [
+      ...withoutUs,
+      { hooks: [{ type: "command", command, timeout: 10 }] },
+    ];
     count++;
   }
 
-  writeFileSync(HOOKS_FILE, JSON.stringify(config, null, 2) + "\n");
+  writeFileSync(SETTINGS_FILE, JSON.stringify(config, null, 2) + "\n");
   return count;
 }
 
-export function unregisterCursorHooks() {
+export function unregisterClaudeHooks() {
   try {
-    const config = loadHooks();
+    const config = loadSettings();
     if (!config.hooks || typeof config.hooks !== "object") return 0;
 
     let removed = 0;
@@ -62,7 +70,9 @@ export function unregisterCursorHooks() {
       if (config.hooks[event].length === 0) delete config.hooks[event];
     }
 
-    writeFileSync(HOOKS_FILE, JSON.stringify(config, null, 2) + "\n");
+    if (Object.keys(config.hooks).length === 0) delete config.hooks;
+
+    writeFileSync(SETTINGS_FILE, JSON.stringify(config, null, 2) + "\n");
     return removed;
   } catch {
     return 0;

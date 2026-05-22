@@ -1,6 +1,8 @@
 import { execFile, execFileSync } from "child_process";
 import { basename } from "path";
-import { loadConfig, CURSOR_EVENT_MAP, pickPhrase } from "./config.js";
+import { loadConfig, CURSOR_EVENT_MAP, CLAUDE_EVENT_MAP, pickPhrase } from "./config.js";
+
+const CLAUDE_HOST_APP = "Ghostty";
 
 function getBranch(cwd) {
   try {
@@ -19,14 +21,18 @@ function escapeAppleScript(str) {
   return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-export function sendNotification(title, message, subtitle) {
+export function sendNotification(title, message, subtitle, options = {}) {
   if (process.platform === "darwin") {
     const parts = [`display notification "${escapeAppleScript(message)}"`, `with title "${escapeAppleScript(title)}"`];
     if (subtitle) {
       parts.push(`subtitle "${escapeAppleScript(subtitle)}"`);
     }
     parts.push(`sound name "Pop"`);
-    execFile("osascript", ["-e", parts.join(" ")], () => {});
+    const stmt = parts.join(" ");
+    const script = options.app
+      ? `tell application "${escapeAppleScript(options.app)}" to ${stmt}`
+      : stmt;
+    execFile("osascript", ["-e", script], () => {});
   } else if (process.platform === "win32") {
     const ps = `
       [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
@@ -49,21 +55,26 @@ export function processEvent(payload) {
   const config = loadConfig();
   if (config.enabled === false) return;
 
-  const cursorEvent = payload.hook_event_name || "";
-  const category = CURSOR_EVENT_MAP[cursorEvent];
+  const event = payload.hook_event_name || "";
+  const claudeCategory = CLAUDE_EVENT_MAP[event];
+  const category = claudeCategory || CURSOR_EVENT_MAP[event];
   if (!category) return;
 
   const categories = config.categories || {};
   if (categories[category] === false) return;
 
   const workspaceRoots = payload.workspace_roots;
-  const cwd = Array.isArray(workspaceRoots) && workspaceRoots[0] ? workspaceRoots[0] : "";
+  const cwd =
+    (Array.isArray(workspaceRoots) && workspaceRoots[0]) ||
+    payload.cwd ||
+    "";
   const branch = cwd ? getBranch(cwd) : null;
   const cwdName = cwd ? basename(cwd) : "";
-  const title = cwdName || branch || "Cursor";
+  const title = cwdName || branch || (claudeCategory ? "Claude Code" : "Cursor");
   const subtitle = branch && branch !== title ? branch : undefined;
 
   const phrase = pickPhrase(category);
+  const app = claudeCategory ? CLAUDE_HOST_APP : undefined;
 
-  sendNotification(title, phrase, subtitle);
+  sendNotification(title, phrase, subtitle, { app });
 }

@@ -17,6 +17,14 @@ export const CURSOR_EVENT_MAP = {
   preCompact: "resource.limit",
 };
 
+export const CLAUDE_EVENT_MAP = {
+  SessionStart: "session.start",
+  SessionEnd: "session.end",
+  Stop: "task.complete",
+  Notification: "task.complete",
+  PreCompact: "resource.limit",
+};
+
 export const PHRASES = {
   "session.start": "Session started",
   "session.end": "Session ended",
