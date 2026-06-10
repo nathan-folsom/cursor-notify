@@ -17,6 +17,24 @@ function getBranch(cwd) {
   }
 }
 
+function getTmuxSessionName() {
+  if (!process.env.TMUX) return null;
+  try {
+    const pane = process.env.TMUX_PANE;
+    const args = ["display-message", "-p", ...(pane ? ["-t", pane] : []), "#S"];
+    const name = execFileSync("tmux", args, {
+      encoding: "utf-8",
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    // Auto-assigned session names are numeric; treat those as unset so the
+    // title falls back to the cwd, matching the tmux set-titles-string rule.
+    return name && !/^\d+$/.test(name) ? name : null;
+  } catch {
+    return null;
+  }
+}
+
 function escapeAppleScript(str) {
   return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
@@ -70,7 +88,7 @@ export function processEvent(payload) {
     "";
   const branch = cwd ? getBranch(cwd) : null;
   const cwdName = cwd ? basename(cwd) : "";
-  const title = cwdName || branch || (claudeCategory ? "Claude Code" : "Cursor");
+  const title = getTmuxSessionName() || cwdName || branch || (claudeCategory ? "Claude Code" : "Cursor");
   const subtitle = branch && branch !== title ? branch : undefined;
 
   const phrase = pickPhrase(category);
